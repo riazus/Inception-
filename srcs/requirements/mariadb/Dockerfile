@@ -1,10 +1,11 @@
-FROM alpine:3.17
+FROM alpine:3.16
 
 ARG DB_NAME \
     DB_USER \
+    DB_ROOT \
     DB_PASS
 
-RUN apk update && apk add --no-cache mariadb mariadb-client
+RUN apk update && apk add --no-cache mariadb mariadb-client dumb-init
 
 RUN mkdir /var/run/mysqld; \
     chmod 777 /var/run/mysqld; \
@@ -16,11 +17,11 @@ RUN mkdir /var/run/mysqld; \
     sed -i "s|skip-networking|skip-networking=0|g" \
       /etc/my.cnf.d/mariadb-server.cnf
 
-RUN mysql_install_db --user=mysql --datadir=/var/lib/mysql
-
+RUN mysql_install_db --user=mysql --datadir=/var/lib/mysql --auth-root-authentication-method=normal
 EXPOSE 3306
 
 COPY requirements/mariadb/conf/create_db.sh .
-RUN sh create_db.sh && rm create_db.sh
+RUN chmod +x  create_db.sh
 USER mysql
-CMD ["/usr/bin/mysqld", "--skip-log-error"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["sh", "create_db.sh"]
