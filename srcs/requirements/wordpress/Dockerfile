@@ -1,42 +1,43 @@
-FROM debian:buster
+FROM alpine:3.16
+ARG PHP_VERSION=8 
+   
+RUN apk update && apk upgrade && apk add --no-cache \
+    php${PHP_VERSION} \
+    php${PHP_VERSION}-fpm \
+    php${PHP_VERSION}-mysqli \
+    php${PHP_VERSION}-json \
+    php${PHP_VERSION}-curl \
+    php${PHP_VERSION}-dom \
+    php${PHP_VERSION}-exif \
+    php${PHP_VERSION}-fileinfo \
+    php${PHP_VERSION}-mbstring \
+    php${PHP_VERSION}-openssl \
+    php${PHP_VERSION}-xml \
+    php${PHP_VERSION}-zip \
+    php${PHO_VERSION}-cli \
+    php${PHP_VERSION}-phar \
+    php${PHP_VERSION}-gd \
+    php${PHP_VESRION}-intl \
+    php${PHP_VESRION}-opcache \
+    wget \
+    mysql-client \
+    unzip && \
+    sed -i "s|listen = 127.0.0.1:9000|listen = 9000|g" \
+      /etc/php8/php-fpm.d/www.conf && \
+    sed -i "s|;listen.owner = nobody|listen.owner = www-data|g" \
+      /etc/php8/php-fpm.d/www.conf && \
+    sed -i "s|;listen.group = nobody|listen.group = www-data|g" \
+      /etc/php8/php-fpm.d/www.conf && \
+    rm -f /var/cache/apk/*
 
-RUN apt-get update && apt-get -y install \
-	wget \
-	curl \
-	bash \
-	php \
-	php-cgi \
-	php-mysql \
-	php-fpm \
-	php-pdo \
-	php-gd php-cli \
-	php-mbstring \
-	redis \
-	php-redis \
-	&& rm -rf /var/lib/apt/lists/*
-
-# I need to install wp_cli command and put it in the right directory /usr/local/bin
-RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
-  && chmod +x wp-cli.phar \
-  && mv wp-cli.phar /usr/local/bin/wp
-
-# Copy the .conf in the html directory
-COPY ./conf/www.conf /etc/php/7.3/fpm/pool.d/
-
-#Create the folder to enable php start
+COPY  requirements/wordpress/tools/wp-start.sh /var/wp-start.sh
+RUN chmod +x /var/wp-start.sh
 RUN mkdir /run/php
 
-#we copy the script, give the right to launch it in local on our computer
-COPY ./tools/create_wordpress.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/create_wordpress.sh
-ENTRYPOINT ["/usr/local/bin/create_wordpress.sh"]
+RUN wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \
+    chmod +x wp-cli.phar && \
+    mv wp-cli.phar /usr/local/bin/wp
 
-#We go the html directory
-WORKDIR /var/www/html/
-
-#We expose the 9000 port
 EXPOSE 9000
 
-#Launch PHP FPM in foreground and ignore deamonize from conf file (-F)
-CMD ["/usr/sbin/php-fpm7.3", "-F"]
-
+ENTRYPOINT [ "sh", "/var/wp-start.sh" ]

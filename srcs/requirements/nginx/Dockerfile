@@ -1,24 +1,4 @@
-FROM	debian:buster
-
-#install all the program
-RUN		apt-get update
-RUN		apt-get install -y nginx \
-                openssl
-
-# nginx SSL
-RUN mkdir /etc/nginx/ssl
-RUN openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes \
-       -out /etc/nginx/ssl/jannabel.crt \
-       -keyout /etc/nginx/ssl/jannabel.key \
-       -subj "/C=FR/ST=Paris/L=Paris/O=42 School/OU=jannabel/CN=jannabel/"
-
-COPY ./conf/nginx.conf /etc/nginx/conf.d
-
-# nginx config
-RUN mkdir -p /run/nginx
-
-#the only port allowed
-EXPOSE	443
-
-# Start nginx
+FROM alpine:3.16
+RUN	apk update && apk upgrade && apk add --no-cache nginx
+EXPOSE 443
 CMD ["nginx", "-g", "daemon off;"]

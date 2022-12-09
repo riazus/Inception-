@@ -1,4 +1,5 @@
 #!bin/sh
+
 if [ ! -f "/var/www/html/wp-config.php" ]; 
 then
 
