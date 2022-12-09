@@ -2,21 +2,19 @@ version: '3'
 
 services:
   nginx:
-    build:
-      context: .
-      dockerfile: requirements/nginx/Dockerfile
     container_name: nginx
+    build: ./requirements/nginx
     depends_on:
-      - wordpress
+      - adminer
+      - redis
+      - hugo
     ports:
-      - "443:443"
-    networks:
-      - inception
+      - 443:443
     volumes:
-      - ./requirements/nginx/conf/:/etc/nginx/http.d/
-      - ./requirements/nginx/tools:/etc/nginx/ssl/
-      - wp-volume:/var/www/
+      - wordpress_data:/var/www/html
     restart: always
+    networks:
+      - network
 
   mariadb:
     build:
@@ -31,6 +29,8 @@ services:
     volumes:
       - db-volume:/var/lib/mysql
     restart: always
+    env_file:
+      - .env
 
   wordpress:
     build:
@@ -42,26 +42,33 @@ services:
       - 9000
     depends_on:
       - mariadb
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
     restart: always
+    env_file:
+      - .env
+    volumes:
+      - wordpress_data:/var/www/html
     networks:
       - inception
     volumes:
       - wp-volume:/var/www/html
 
 volumes:
-  wp-volume:
+  mariadb_data:
+    driver: local
     driver_opts:
-      o: bind
       type: none
-      device: /home/${USER}/data/wordpress
-
-  db-volume:
+      device: /home/jannabel/data/mysql
+      o: bind
+  wordpress_data:
+    driver: local
     driver_opts:
-      o: bind
       type: none
-      device: /home/${USER}/data/mariadb
+      device: /home/jannabel/data/wordpress
+      o: bind
 
 networks:
-    inception:
-        driver: bridge
-
+  network:
+    driver: bridge
